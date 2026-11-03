@@ -1,80 +1,54 @@
-let toddler = [
-  {
-    id: 1,
-    nama: 'Alya',
-    tanggalLahir: '2022-05-10',
-    jenisKelamin: 'P',
-    beratKg: 12,
-    tinggiCm: 85
+const mongoose = require('mongoose');
+
+// Schema alamat (Embedding)
+const alamatSchema = new mongoose.Schema({
+  jalan: String,
+  kota: String
+}, { _id: false });
+
+// Schema Toddler
+const toddlerSchema = new mongoose.Schema({
+  nama: {
+    type: String,
+    required: [true, 'nama wajib diisi'],
+    trim: true
   },
-  {
-    id: 2,
-    nama: 'Rafi',
-    tanggalLahir: '2021-08-15',
-    jenisKelamin: 'L',
-    beratKg: 14,
-    tinggiCm: 90
+  tanggalLahir: {
+    type: Date,
+    required: [true, 'tanggal lahir wajib diisi']
+  },
+  jenisKelamin: {
+    type: String,
+    required: [true, 'jenis kelamin wajib diisi'],
+    enum: ['L', 'P']
+  },
+  beratKg: {
+    type: Number,
+    required: [true, 'berat badan wajib diisi']
+  },
+  tinggiCm: {
+    type: Number,
+    required: [true, 'tinggi badan wajib diisi']
+  },
+
+  // Embedding
+  alamat: alamatSchema,
+
+  // Referencing ke OrangTua
+  orangTuaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'OrangTua'
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-];
+});
 
-let nextId = 3;
+toddlerSchema.index(
+  { tanggalLahir: 1 },
+  { unique: true }
+);
 
-// Mengambil semua data toddler
-const getAll = () => {
-  return toddler;
-};
-
-// Mengambil data berdasarkan ID
-const getById = (id) => {
-  return toddler.find((t) => t.id === id);
-};
-
-// Menambahkan data toddler
-const create = (data) => {
-  const baru = {
-    id: nextId++,
-    ...data
-  };
-
-  toddler.push(baru);
-
-  return baru;
-};
-
-// Mengubah data toddler
-const update = (id, data) => {
-  const index = toddler.findIndex((t) => t.id === id);
-
-  if (index === -1) {
-    return null;
-  }
-
-  toddler[index] = {
-    ...toddler[index],
-    ...data,
-    id
-  };
-
-  return toddler[index];
-};
-
-// Menghapus data toddler
-const remove = (id) => {
-  const index = toddler.findIndex((t) => t.id === id);
-
-  if (index === -1) {
-    return false;
-  }
-
-  toddler.splice(index, 1);
-
-  return true;
-};
-
-module.exports = {
-  getAll,
-  getById,
-  create,
-  update,
-  remove
-};
+module.exports = mongoose.model('Toddler', toddlerSchema);

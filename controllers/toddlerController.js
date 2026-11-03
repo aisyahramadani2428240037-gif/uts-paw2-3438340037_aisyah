@@ -1,106 +1,108 @@
-const toddlerModel = require('../models/toddlerModel');
 
-// GET semua toddler
-const getAllToddler = (req, res) => {
-  const { jenisKelamin } = req.query;
+const Toddler = require('../models/toddlerModel');
 
-  let data = toddlerModel.getAll();
-
-  // Filter berdasarkan jenis kelamin
-  if (jenisKelamin) {
-    data = data.filter(
-      (t) => t.jenisKelamin === jenisKelamin
-    );
+exports.create = async (req, res) => {
+  try {
+    const toddler = await Toddler.create(req.body);
+    await toddler.populate('orangTuaId');
+    res.status(201).json(toddler);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
-
-  res.status(200).json(data);
 };
 
-// GET toddler berdasarkan ID
-const getToddlerById = (req, res) => {
-  const id = parseInt(req.params.id);
 
-  const data = toddlerModel.getById(id);
 
-  if (!data) {
-    return res.status(404).json({
-      message: 'Data toddler tidak ditemukan'
+exports.getAll = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+
+    if (req.query.jenisKelamin) {
+  filter.jenisKelamin = {
+    $regex: `^${req.query.jenisKelamin}$`,
+    $options: 'i'
+  };
+}
+
+    const total = await Toddler.countDocuments(filter);
+
+    const data = await Toddler.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .populate('orangTuaId');
+
+    res.status(200).json({
+      page: page,
+      limit: limit,
+      total: total,
+      totalPages: Math.ceil(total / limit),
+      data: data
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+exports.getById = async (req, res) => {
+  try {
+    const data = await Toddler.findById(req.params.id)
+      .populate('orangTuaId');
+
+    if (!data) {
+      return res.status(404).json({
+        message: 'Data tidak ditemukan'
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Terjadi kesalahan pada server'
     });
   }
-
-  res.status(200).json(data);
 };
 
-// POST toddler
-const createToddler = (req, res) => {
-  const {
-    nama,
-    tanggalLahir,
-    jenisKelamin,
-    beratKg,
-    tinggiCm
-  } = req.body;
+exports.update = async (req, res) => {
+  try {
+    const data = await Toddler.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).populate('orangTuaId');
 
-  // Validasi data
-  if (
-    !nama ||
-    !tanggalLahir ||
-    !jenisKelamin ||
-    beratKg === undefined ||
-    tinggiCm === undefined
-  ) {
-    return res.status(400).json({
-      message:
-        'nama, tanggalLahir, jenisKelamin, beratKg dan tinggiCm wajib diisi'
-    });
+    if (!data) {
+      return res.status(404).json({
+        message: 'Data tidak ditemukan'
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
-
-  const dataBaru = toddlerModel.create({
-    nama,
-    tanggalLahir,
-    jenisKelamin,
-    beratKg,
-    tinggiCm
-  });
-
-  res.status(201).json(dataBaru);
 };
 
-// PUT toddler
-const updateToddler = (req, res) => {
-  const id = parseInt(req.params.id);
+exports.remove = async (req, res) => {
+  try {
+    const data = await Toddler.findByIdAndDelete(req.params.id);
 
-  const data = toddlerModel.update(id, req.body);
+    if (!data) {
+      return res.status(404).json({
+        message: 'Data tidak ditemukan'
+      });
+    }
 
-  if (!data) {
-    return res.status(404).json({
-      message: 'Data toddler tidak ditemukan'
+    res.status(200).json({
+      message: 'Data Toddler berhasil dihapus'
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  res.status(200).json(data);
-};
-
-// DELETE toddler
-const deleteToddler = (req, res) => {
-  const id = parseInt(req.params.id);
-
-  const berhasil = toddlerModel.remove(id);
-
-  if (!berhasil) {
-    return res.status(404).json({
-      message: 'Data toddler tidak ditemukan'
-    });
-  }
-
-  // 204 = berhasil dihapus dan tidak ada response body
-  res.status(204).send();
-};
-
-module.exports = {
-  getAllToddler,
-  getToddlerById,
-  createToddler,
-  updateToddler,
-  deleteToddler
 };

@@ -1,42 +1,13 @@
 const express = require('express');
-
 const router = express.Router();
-
-const toddlerController = require('../controllers/toddlerController');
-
+const c = require('../controllers/toddlerController');
 const cekApiKey = require('../middlewares/cekApiKey');
 
-// GET semua toddler
-router.get(
-  '/',
-  toddlerController.getAllToddler
-);
+router.get('/', c.getAll);
+router.get('/:id', c.getById);
+router.post('/', cekApiKey, c.create);
 
-// GET toddler berdasarkan ID
-router.get(
-  '/:id',
-  toddlerController.getToddlerById
-);
-
-// POST toddler
-router.post(
-  '/',
-  cekApiKey,
-  toddlerController.createToddler
-);
-
-// PUT toddler
-router.put(
-  '/:id',
-  cekApiKey,
-  toddlerController.updateToddler
-);
-
-// DELETE toddler
-router.delete(
-  '/:id',
-  cekApiKey,
-  toddlerController.deleteToddler
-);
+router.put('/:id', cekApiKey, c.update);
+router.delete('/:id', cekApiKey, c.remove);
 
 module.exports = router;
